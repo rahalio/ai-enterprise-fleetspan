@@ -1,0 +1,691 @@
+openapi: 3.0.3
+info:
+  title: Fleetspan
+  version: 0.1.0
+  description: >-
+    Marketplace and rideshare ML scale-ops platform for dimension-scoped
+    datasets, training, real-time routed serving, A/B, and drift monitoring.
+  x-product-slug: ai-enterprise-fleetspan
+  x-source: ai-in-enterprise/Yoda_ Scaling Machine Learning @ Careem – Tech @ Careem – Medium/
+servers:
+  - url: https://api.example.com
+tags:
+  - name: Dimensions
+  - name: Datasets
+  - name: Training
+  - name: Models
+  - name: Serving
+  - name: Experiments
+  - name: Monitoring
+paths:
+  /v1/dimensions:
+    get:
+      operationId: listDimensions
+      tags: [Dimensions]
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: Dimensions page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeDimension" }
+    post:
+      operationId: createDimension
+      tags: [Dimensions]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Dimension" }
+      responses:
+        "201":
+          description: Dimension created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeDimension" }
+  /v1/datasets:
+    get:
+      operationId: listDatasets
+      tags: [Datasets]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: dimensionId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Datasets page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeDataset" }
+    post:
+      operationId: createDatasetJob
+      tags: [Datasets]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DatasetCreate" }
+      responses:
+        "201":
+          description: Dataset job accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeDataset" }
+  /v1/training-jobs:
+    get:
+      operationId: listTrainingJobs
+      tags: [Training]
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: Training jobs
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeTrainingJob" }
+    post:
+      operationId: startTrainingJob
+      tags: [Training]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TrainingJobCreate" }
+      responses:
+        "202":
+          description: Training started
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeTrainingJob" }
+  /v1/models:
+    get:
+      operationId: listMarketplaceModels
+      tags: [Models]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: projectId
+          in: query
+          schema: { type: string }
+        - name: dimensionId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Models page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeModelArtifact" }
+  /v1/models/{modelId}/benchmark-submissions:
+    parameters:
+      - name: modelId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: submitBenchmark
+      tags: [Models]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BenchmarkSubmission" }
+      responses:
+        "201":
+          description: Benchmark recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeBenchmarkSubmission" }
+  /v1/serving/endpoints:
+    get:
+      operationId: listServingEndpoints
+      tags: [Serving]
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: Serving endpoints
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeServingEndpoint" }
+    post:
+      operationId: createServingEndpoint
+      tags: [Serving]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ServingEndpointCreate" }
+      responses:
+        "201":
+          description: Endpoint created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeServingEndpoint" }
+  /v1/serving/predict:
+    post:
+      operationId: predictRealtime
+      tags: [Serving]
+      security: [{ ApiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PredictRequest" }
+      responses:
+        "200":
+          description: Prediction
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopePredictResponse" }
+  /v1/serving/endpoints/{endpointId}/deploy:
+    parameters:
+      - name: endpointId
+        in: path
+        required: true
+        schema: { type: string }
+    post:
+      operationId: oneClickDeploy
+      tags: [Serving]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [modelId, dimensionId]
+              properties:
+                modelId: { type: string }
+                dimensionId: { type: string }
+      responses:
+        "202":
+          description: Deploy accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeServingEndpoint" }
+  /v1/batch-predictions:
+    post:
+      operationId: startBatchPrediction
+      tags: [Serving]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BatchPredictionJob" }
+      responses:
+        "202":
+          description: Batch job accepted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeBatchPredictionJob" }
+  /v1/experiments:
+    get:
+      operationId: listExperiments
+      tags: [Experiments]
+      security: [{ BearerAuth: [] }]
+      responses:
+        "200":
+          description: Experiments
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeExperimentAssignment" }
+    post:
+      operationId: createExperiment
+      tags: [Experiments]
+      security: [{ BearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ExperimentAssignment" }
+      responses:
+        "201":
+          description: Experiment created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DataEnvelopeExperimentAssignment" }
+  /v1/monitoring/drift-alerts:
+    get:
+      operationId: listDriftAlerts
+      tags: [Monitoring]
+      security: [{ BearerAuth: [] }]
+      parameters:
+        - name: dimensionId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Drift alerts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ListEnvelopeDriftAlert" }
+components:
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+  responses:
+    Unauthorized:
+      description: Missing or invalid credentials
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    UnprocessableEntity:
+      description: Validation failed
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Problem" }
+  schemas:
+    ResponseMeta:
+      type: object
+      required: [requestId, timestamp]
+      properties:
+        requestId: { type: string }
+        timestamp: { type: string, format: date-time }
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+
+    Dimension:
+      type: object
+      required: [type, key]
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          enum: [country, city, vehicle_type, cohort]
+        key: { type: string }
+        displayName: { type: string }
+        status:
+          type: string
+          enum: [active, launching, retired]
+    Dataset:
+      type: object
+      required: [id, projectId, dimensionId, status]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        dimensionId: { type: string }
+        status:
+          type: string
+          enum: [queued, running, ready, failed]
+        storageUri: { type: string }
+        generatedAt: { type: string, format: date-time }
+        lineage: { type: string }
+    DatasetCreate:
+      type: object
+      required: [projectId, dimensionId, queryOrJobSpec]
+      properties:
+        projectId: { type: string }
+        dimensionId: { type: string }
+        queryOrJobSpec: { type: string }
+        engine:
+          type: string
+          enum: [sql, spark]
+    TrainingJob:
+      type: object
+      required: [id, datasetId, library, status]
+      properties:
+        id: { type: string }
+        datasetId: { type: string }
+        library:
+          type: string
+          enum: [sklearn, catboost, tensorflow, mllib, other]
+        status:
+          type: string
+          enum: [queued, running, succeeded, failed]
+        resourceProfile: { type: string }
+        modelArtifactId: { type: string }
+    TrainingJobCreate:
+      type: object
+      required: [datasetId, library]
+      properties:
+        datasetId: { type: string }
+        library:
+          type: string
+          enum: [sklearn, catboost, tensorflow, mllib, other]
+        resourceProfile: { type: string }
+        pipelineScaffold: { type: boolean }
+    ModelArtifact:
+      type: object
+      required: [id, projectId, dimensionId, version]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        dimensionId: { type: string }
+        version: { type: string }
+        storageUri: { type: string }
+        metrics:
+          type: object
+          additionalProperties: { type: number }
+    BenchmarkSubmission:
+      type: object
+      required: [benchmarkId, score]
+      properties:
+        id: { type: string }
+        modelId: { type: string }
+        benchmarkId: { type: string }
+        score: { type: number, format: float }
+        notes: { type: string }
+    ServingEndpoint:
+      type: object
+      required: [id, projectId, mode, status]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        mode:
+          type: string
+          enum: [realtime, batch]
+        status:
+          type: string
+          enum: [active, deploying, degraded]
+        latencySloMs: { type: number }
+    ServingEndpointCreate:
+      type: object
+      required: [projectId, mode]
+      properties:
+        projectId: { type: string }
+        mode:
+          type: string
+          enum: [realtime, batch]
+        latencySloMs: { type: number }
+    PredictRequest:
+      type: object
+      required: [projectId, features]
+      properties:
+        projectId: { type: string }
+        dimensionHints:
+          type: object
+          additionalProperties: { type: string }
+        features:
+          type: object
+          additionalProperties: true
+        experimentContext: { type: string }
+    PredictResponse:
+      type: object
+      required: [prediction, modelId, dimensionId]
+      properties:
+        prediction:
+          type: object
+          additionalProperties: true
+        modelId: { type: string }
+        dimensionId: { type: string }
+        experimentId: { type: string }
+        latencyMs: { type: number }
+    BatchPredictionJob:
+      type: object
+      required: [modelId, outputUri]
+      properties:
+        id: { type: string }
+        modelId: { type: string }
+        outputUri: { type: string }
+        status:
+          type: string
+          enum: [queued, running, succeeded, failed]
+    ExperimentAssignment:
+      type: object
+      required: [projectId, dimensionId, championModelId, challengerModelId]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        dimensionId: { type: string }
+        championModelId: { type: string }
+        challengerModelId: { type: string }
+        trafficPctToChallenger: { type: number, format: float }
+        status:
+          type: string
+          enum: [running, concluded, aborted]
+    DriftAlert:
+      type: object
+      required: [dimensionId, modelId, severity]
+      properties:
+        id: { type: string }
+        dimensionId: { type: string }
+        modelId: { type: string }
+        severity:
+          type: string
+          enum: [warning, critical]
+        metric: { type: string }
+        detectedAt: { type: string, format: date-time }
+
+    DataEnvelopeDimension:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/Dimension" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeDimension:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Dimension" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
+
+    DataEnvelopeDataset:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/Dataset" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeDataset:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Dataset" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
+
+    DataEnvelopeTrainingJob:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/TrainingJob" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeTrainingJob:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/TrainingJob" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
+
+    DataEnvelopeModelArtifact:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ModelArtifact" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeModelArtifact:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/ModelArtifact" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
+
+    DataEnvelopeBenchmarkSubmission:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/BenchmarkSubmission" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeBenchmarkSubmission:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/BenchmarkSubmission" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
+
+    DataEnvelopeServingEndpoint:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ServingEndpoint" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeServingEndpoint:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/ServingEndpoint" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
+
+    DataEnvelopePredictResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/PredictResponse" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopePredictResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/PredictResponse" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
+
+    DataEnvelopeBatchPredictionJob:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/BatchPredictionJob" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeBatchPredictionJob:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/BatchPredictionJob" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
+
+    DataEnvelopeExperimentAssignment:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/ExperimentAssignment" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeExperimentAssignment:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/ExperimentAssignment" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
+
+    DataEnvelopeDriftAlert:
+      type: object
+      required: [data, meta]
+      properties:
+        data: { $ref: "#/components/schemas/DriftAlert" }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+    ListEnvelopeDriftAlert:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/DriftAlert" }
+            nextCursor: { type: string }
+        meta: { $ref: "#/components/schemas/ResponseMeta" }
+
